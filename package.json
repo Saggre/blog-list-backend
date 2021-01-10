@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "jest --verbose"
   },
   "repository": {
     "type": "git",
@@ -17,6 +17,9 @@
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Saggre/blog-list-backend/issues"
+  },
+  "jest": {
+    "testEnvironment": "node"
   },
   "homepage": "https://github.com/Saggre/blog-list-backend#readme",
   "dependencies": {
