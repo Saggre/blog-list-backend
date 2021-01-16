@@ -52,9 +52,27 @@ describe('when there is initially some blogs saved', () => {
     });
   });
 
+  test('a blog can be modified', async () => {
+    let response = await api.get('/api/blogs');
+    const newTitle = 'New blog title';
+    const newLikes = 1337;
+    const { id } = response.body[0];
+
+    await api.put(`/api/blogs/${id}`).send({
+      title: newTitle,
+      likes: newLikes,
+    }).expect(200);
+
+    response = await api.get('/api/blogs');
+    const titles = response.body.map((r) => r.title);
+    const likes = response.body.map((r) => r.likes);
+
+    expect(titles).toContain(newTitle);
+    expect(likes).toContain(newLikes);
+  });
+
   test('a blog can be deleted by id', async () => {
     let response = await api.get('/api/blogs');
-
     const { id } = response.body[0];
     await api.delete(`/api/blogs/${id}`).expect(204);
 
@@ -69,7 +87,6 @@ describe('addition of a new blog', () => {
     delete blog.likes;
 
     const response = await api.post('/api/blogs').send(blog);
-
     expect(response.body.likes).toEqual(0);
   });
 
