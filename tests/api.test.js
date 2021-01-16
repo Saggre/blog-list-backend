@@ -51,6 +51,16 @@ describe('when there is initially some blogs saved', () => {
       expect(blog.id).toBeDefined();
     });
   });
+
+  test('a blog can be deleted by id', async () => {
+    let response = await api.get('/api/blogs');
+
+    const { id } = response.body[0];
+    await api.delete(`/api/blogs/${id}`).expect(204);
+
+    response = await api.get('/api/blogs');
+    expect(response.body).toHaveLength(blogs.length - 1);
+  });
 });
 
 describe('addition of a new blog', () => {
