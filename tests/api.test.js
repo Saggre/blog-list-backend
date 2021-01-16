@@ -18,35 +18,46 @@ beforeEach(async () => {
   await blogs.forEach((b) => new Blog(b).save());
 });
 
-test('Blog list application returns the correct amount of blog posts in JSON format', async () => {
-  const response = await api
-    .get('/api/blogs')
-    .expect(200)
-    .expect('Content-Type', /application\/json/);
+describe('API tests', () => {
+  test('Blog list application returns the correct amount of blog posts in JSON format', async () => {
+    const response = await api
+      .get('/api/blogs')
+      .expect(200)
+      .expect('Content-Type', /application\/json/);
 
-  expect(response.body).toHaveLength(blogs.length);
-});
-
-test('Blogs contain correct id parameter', async () => {
-  const response = await api.get('/api/blogs');
-
-  response.body.forEach((blog) => {
-    expect(blog.id).toBeDefined();
+    expect(response.body).toHaveLength(blogs.length);
   });
-});
 
-test('Blog is posted correctly', async () => {
-  await api
-    .post('/api/blogs')
-    .send(blogs[0])
-    .expect(201)
-    .expect('Content-Type', /application\/json/);
+  test('Blogs contain correct id parameter', async () => {
+    const response = await api.get('/api/blogs');
 
-  const response = await api.get('/api/blogs');
-  const titles = response.body.map((r) => r.title);
+    response.body.forEach((blog) => {
+      expect(blog.id).toBeDefined();
+    });
+  });
 
-  expect(response.body).toHaveLength(blogs.length + 1);
-  expect(titles).toContain(blogs[0].title);
+  test('Blog is posted correctly', async () => {
+    await api
+      .post('/api/blogs')
+      .send(blogs[0])
+      .expect(201)
+      .expect('Content-Type', /application\/json/);
+
+    const response = await api.get('/api/blogs');
+    const titles = response.body.map((r) => r.title);
+
+    expect(response.body).toHaveLength(blogs.length + 1);
+    expect(titles).toContain(blogs[0].title);
+  });
+
+  test('Like count defaults to zero', async () => {
+    const blog = blogs[0];
+    delete blog.likes;
+
+    const response = await api.post('/api/blogs').send(blog);
+
+    expect(response.body.likes).toEqual(0);
+  });
 });
 
 afterAll(() => {
