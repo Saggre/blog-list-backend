@@ -25,13 +25,23 @@ beforeEach(async () => {
   await initialBlogs.forEach((b) => new Blog(b).save());
 });
 
-test('Blog list application returns the correct amount of blog posts in JSON format', async () => {
-  const response = await api
-    .get('/api/blogs')
-    .expect(200)
-    .expect('Content-Type', /application\/json/);
+describe('API tests', () => {
+  test('Blog list application returns the correct amount of blog posts in JSON format', async () => {
+    const response = await api
+      .get('/api/blogs')
+      .expect(200)
+      .expect('Content-Type', /application\/json/);
 
-  expect(response.body).toHaveLength(2);
+    expect(response.body).toHaveLength(initialBlogs.length);
+  });
+
+  test('Blogs contain correct id parameter', async () => {
+    const response = await api.get('/api/blogs');
+
+    response.body.forEach((blog) => {
+      expect(blog.id).toBeDefined();
+    });
+  });
 });
 
 afterAll(() => {
