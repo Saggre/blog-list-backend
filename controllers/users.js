@@ -8,7 +8,7 @@ usersRouter.post('/', async (request, response, next) => {
   if (body.password.length < 3) {
     const err = new Error('Password length must be at least 3');
     err.name = 'ValidationError';
-    next(err);
+    return next(err);
   }
 
   const saltRounds = 10;
@@ -26,7 +26,9 @@ usersRouter.post('/', async (request, response, next) => {
 });
 
 usersRouter.get('/', async (request, response) => {
-  const users = await User.find({});
+  const users = await User.find({}).populate('blogs', {
+    title: 1, author: 1, url: 1, likes: 1,
+  });
   response.json(users.map((u) => u.toJSON()));
 });
 
