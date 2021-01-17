@@ -4,10 +4,6 @@ const Blog = require('../models/blog');
 const User = require('../models/user');
 const { SECRET } = require('../utils/config');
 
-const getTokenFrom = (request) => {
-
-};
-
 blogsRouter.get('/', async (request, response) => {
   const blogs = await Blog.find({}).populate('user', { username: 1, name: 1 });
   return response.json(blogs);
@@ -44,7 +40,18 @@ blogsRouter.post('/', async (request, response) => {
 });
 
 blogsRouter.delete('/:id', async (request, response) => {
-  await Blog.findByIdAndRemove(request.params.id);
+  const decodedToken = jwt.verify(request.token, SECRET);
+
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: 'token missing or invalid' });
+  }
+
+  const result = await Blog.findOneAndDelete({ _id: request.params.id, user: { _id: decodedToken.id } });
+
+  if (!result) {
+    return response.status(404).end();
+  }
+
   return response.status(204).end();
 });
 
