@@ -4,6 +4,8 @@ const app = require('../app');
 
 const api = supertest(app);
 const Blog = require('../models/blog');
+const User = require('../models/user');
+const { addTestUser } = require('../utils/list_helper');
 
 const blogs = [
   {
@@ -14,11 +16,26 @@ const blogs = [
   },
 ];
 
-describe('when there is initially some blogs saved', () => {
+const user = { username: 'root', name: 'Foo Bar', password: 'hunter2' };
+
+describe('when there is initially some blogs saved, and a user exists', () => {
+  let testAuth;
+
   beforeEach(async () => {
+    await User.deleteMany({});
+
+    testAuth = await addTestUser(user);
+
     await Blog.deleteMany({});
-    const blogPromises = blogs.map((blog) => new Blog(blog).save());
-    await Promise.all(blogPromises);
+    const blogPromises = blogs.map((blog) => new Blog({ ...blog, user: testAuth.id }).save());
+    const blogIds = (await Promise.all(blogPromises)).map((blog) => blog._id);
+
+    // Set blog ids to user
+    await User.findByIdAndUpdate(testAuth.id, { blogs: blogIds }, {
+      new: true,
+      runValidators: true,
+      context: 'query',
+    });
   });
 
   test('blog list application returns the correct amount of blog posts in JSON format', async () => {
@@ -34,6 +51,7 @@ describe('when there is initially some blogs saved', () => {
     await api
       .post('/api/blogs')
       .send({ ...blogs[0] })
+      .set('Authorization', `bearer ${testAuth.token}`)
       .expect(201)
       .expect('Content-Type', /application\/json/);
 
@@ -74,19 +92,35 @@ describe('when there is initially some blogs saved', () => {
   test('a blog can be deleted by id', async () => {
     let response = await api.get('/api/blogs');
     const { id } = response.body[0];
-    await api.delete(`/api/blogs/${id}`).expect(204);
+    await api.delete(`/api/blogs/${id}`).set('Authorization', `bearer ${testAuth.token}`).expect(204);
 
     response = await api.get('/api/blogs');
     expect(response.body).toHaveLength(blogs.length - 1);
   });
 });
 
-describe('addition of a new blog', () => {
+describe('when there is no authenticated user', () => {
+  test('new blog cannot be added without authenticating', async () => {
+    const blog = { ...blogs[0] };
+
+    await api.post('/api/blogs').send(blog).expect(401);
+  });
+});
+
+describe('addition of a new blog when a user exists', () => {
+  let testAuth;
+
+  beforeEach(async () => {
+    await User.deleteMany({});
+
+    testAuth = await addTestUser(user);
+  });
+
   test('like count defaults to zero', async () => {
     const blog = { ...blogs[0] };
     delete blog.likes;
 
-    const response = await api.post('/api/blogs').send(blog);
+    const response = await api.post('/api/blogs').send(blog).set('Authorization', `bearer ${testAuth.token}`);
     expect(response.body.likes).toEqual(0);
   });
 
@@ -94,12 +128,12 @@ describe('addition of a new blog', () => {
     let blog = { ...blogs[0] };
     delete blog.title;
 
-    await api.post('/api/blogs').send(blog).expect(400);
+    await api.post('/api/blogs').send(blog).set('Authorization', `bearer ${testAuth.token}`).expect(400);
 
     blog = { ...blogs[0] };
     delete blog.url;
 
-    await api.post('/api/blogs').send(blog).expect(400);
+    await api.post('/api/blogs').send(blog).set('Authorization', `bearer ${testAuth.token}`).expect(400);
   });
 });
 

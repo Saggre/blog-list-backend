@@ -1,5 +1,8 @@
 const _ = require('lodash');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const User = require('../models/user');
+const { SECRET } = require('./config');
 
 // eslint-disable-next-line no-unused-vars
 const dummy = (blogs) => 1;
@@ -54,6 +57,27 @@ const usersInDb = async () => {
   return users.map((u) => u.toJSON());
 };
 
+/**
+ * Fetches a bearer token for a user
+ * @param user
+ * @returns {Promise<string|Token.value|Object.value>}
+ */
+const addTestUser = async (user) => {
+  const newUser = { ...user, passwordHash: await bcrypt.hash(user.password, 10) };
+  delete newUser.password;
+  const dbUser = await new User(user).save();
+
+  const token = jwt.sign({
+    username: dbUser.username,
+    id: dbUser._id,
+  }, SECRET);
+
+  return {
+    token,
+    id: dbUser._id,
+  };
+};
+
 module.exports = {
   dummy,
   totalLikes,
@@ -61,4 +85,5 @@ module.exports = {
   mostBlogs,
   mostLikes,
   usersInDb,
+  addTestUser,
 };
