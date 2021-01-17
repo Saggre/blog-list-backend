@@ -2,8 +2,14 @@ const bcrypt = require('bcrypt');
 const usersRouter = require('express').Router();
 const User = require('../models/user');
 
-usersRouter.post('/', async (request, response) => {
+usersRouter.post('/', async (request, response, next) => {
   const { body } = request;
+
+  if (body.password.length < 3) {
+    const err = new Error('Password length must be at least 3');
+    err.name = 'ValidationError';
+    next(err);
+  }
 
   const saltRounds = 10;
   const passwordHash = await bcrypt.hash(body.password, saltRounds);
